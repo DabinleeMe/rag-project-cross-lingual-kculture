@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+cleanenv/
+
+# FAISS / local indexes
+*.faiss
+*.index
+faiss_index/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Optional: keep raw results out if you prefer
+# RAG_Kculture_result.csv

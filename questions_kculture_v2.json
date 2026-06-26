@@ -1,0 +1,161 @@
+[
+  {
+    "id": "T1",
+    "tier": 1,
+    "discriminator": "RAG_gap + cross_lingual",
+    "source": "01_kpop_demon_hunters",
+    "languages": ["en", "ko"],
+    "question_en": "What awards did KPop Demon Hunters win in 2026?",
+    "question_ko": "〈케이팝 데몬 헌터스〉가 2026년에 받은 상은?",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "2026 Golden Globe Best Original Song; 2026 Golden Globe Best Animated Feature; 2026 Academy Award Best Animated Feature; 2026 Academy Award Best Original Song. (골든글로브 주제가상·장편애니메이션상 + 아카데미 장편애니메이션상·주제가상)",
+    "verify": true
+  },
+  {
+    "id": "T2",
+    "tier": 1,
+    "discriminator": "RAG_gap",
+    "source": "02_bts",
+    "languages": ["ko"],
+    "question_ko": "방탄소년단이 2026년에 발매한 정규 앨범의 이름과 발매일은?",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "정규 5집 《ARIRANG(아리랑)》 / 2026-03-20",
+    "verify": true
+  },
+  {
+    "id": "T3",
+    "tier": 1,
+    "discriminator": "RAG_gap",
+    "source": "03_blackpink",
+    "languages": ["en"],
+    "question_en": "On which date did BLACKPINK release their new album, and what is its name?",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "February 27 — mini-album 3 'DEADLINE' (2월 27일, 미니 3집 'DEADLINE').",
+    "verify": true
+  },
+  {
+    "id": "T4",
+    "tier": 1,
+    "discriminator": "RAG_gap",
+    "source": "04_squid_game",
+    "languages": ["ko"],
+    "question_ko": "〈오징어 게임〉 시즌1, 시즌2, 시즌3의 방송(공개) 날짜는?",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "시즌1: 2021-09-17 / 시즌2: 2024-12-26 / 시즌3: 2025-06-27",
+    "verify": true
+  },
+  {
+    "id": "X1",
+    "tier": 2,
+    "discriminator": "cross_lingual (lexical gap: Korean Wave <-> 한류)",
+    "source": "06_Hallyu",
+    "languages": ["en", "ko"],
+    "question_en": "What does the term 'Korean Wave' refer to?",
+    "question_ko": "'한류'란 무엇을 가리키나?",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "한류(韓流, Korean Wave, Hallyu): 대한민국의 대중문화를 포함한 한국 관련 것들이 한국 이외의 나라에서 인기를 얻는 현상. '한류'는 1990년대 한국 문화의 영향력이 타국에서 급성장하며 등장한 신조어.",
+    "verify": false
+  },
+  {
+    "id": "X2",
+    "tier": 2,
+    "discriminator": "cross_lingual (transliteration gap: Palme d'Or <-> 황금종려상)",
+    "source": "05_parasite",
+    "languages": ["en", "ko"],
+    "question_en": "Which top prize did Parasite win at the Cannes Film Festival?",
+    "question_ko": "〈기생충〉이 칸 영화제에서 받은 최고상은?",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "황금종려상 (Palme d'Or, 2019).",
+    "verify": false
+  },
+  {
+    "id": "X3",
+    "tier": 2,
+    "discriminator": "cross_lingual (no cognate -> pure semantic: barrier <-> 혼문)",
+    "source": "01_kpop_demon_hunters",
+    "languages": ["en", "ko"],
+    "question_en": "What is the name of the magical barrier that seals demons away in KPop Demon Hunters?",
+    "question_ko": "〈케데헌〉에서 악마를 봉인하는 결계의 이름은?",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "혼문 (Honmoon).",
+    "verify": false
+  },
+  {
+    "id": "G1",
+    "tier": 3,
+    "discriminator": "grounding (unanswerable)",
+    "source": "01_kpop_demon_hunters",
+    "languages": ["en"],
+    "question_en": "According to the article, what was the production budget of KPop Demon Hunters?",
+    "expected_behavior": "abstain_unanswerable",
+    "expected_answer": "Not stated in the article — the model should say the information is not in the document (no hallucinated number). [VERIFY budget is truly absent from 01]",
+    "verify": true
+  },
+  {
+    "id": "G2",
+    "tier": 3,
+    "discriminator": "grounding (false premise)",
+    "source": "01_kpop_demon_hunters",
+    "languages": ["ko"],
+    "question_ko": "헌트릭스(HUNTR/X)가 2024년에 발표한 세 번째 정규 앨범의 제목은?",
+    "expected_behavior": "flag_false_premise",
+    "expected_answer": "전제 오류 — 헌트릭스는 2025년 영화 속 가공의 그룹이라 그런 실제 앨범은 존재하지 않음. 모델은 이를 지적/기권해야 함(허구 제목 생성 시 환각).",
+    "verify": false
+  },
+  {
+    "id": "G3",
+    "tier": 3,
+    "discriminator": "grounding + RAG_gap (specific place, hallucination-prone)",
+    "source": "02_bts",
+    "languages": ["en"],
+    "question_en": "Where does BTS hold their comeback concert in March 2026?",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "Gwanghwamun Square (광화문 광장).",
+    "verify": true
+  },
+  {
+    "id": "G4",
+    "tier": 3,
+    "discriminator": "grounding (single-document attribution)",
+    "source": "06_Hallyu",
+    "languages": ["ko"],
+    "question_ko": "〈한류〉 문서가 직접 언급하는 한류의 구체적 예시 두 가지를 들어라.",
+    "expected_behavior": "answer_from_single_doc",
+    "expected_answer": "[FILL — 06_Hallyu 본문이 실제로 드는 예시 2개로 확정. 본문에 없는 사례를 대면 환각.]",
+    "verify": true
+  },
+  {
+    "id": "M1",
+    "tier": 4,
+    "discriminator": "retrieval (k>=2) + cross_lingual",
+    "source": "02_bts + 03_blackpink",
+    "languages": ["en", "ko"],
+    "question_en": "Compare the debut years and agencies of BTS and BLACKPINK in one sentence.",
+    "question_ko": "BTS와 블랙핑크의 데뷔 연도와 소속사를 한 문장으로 비교하라.",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "BTS: 2013, Big Hit (빅히트); BLACKPINK: 2016, YG Entertainment.",
+    "verify": false
+  },
+  {
+    "id": "M2",
+    "tier": 4,
+    "discriminator": "retrieval (MMR diversity, multi-doc)",
+    "source": "02_bts + 04_squid_game + 05_parasite + 07_K-pop",
+    "languages": ["en"],
+    "question_en": "List three different forms of Korean culture in this corpus, each with one example.",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "Music (K-pop): BTS/BLACKPINK; Film: Parasite/KPop Demon Hunters; TV drama: Squid Game.",
+    "verify": false
+  },
+  {
+    "id": "M3",
+    "tier": 4,
+    "discriminator": "retrieval + RAG_gap + multi-hop (hardest)",
+    "source": "01_kpop_demon_hunters + 06_Hallyu",
+    "languages": ["en"],
+    "question_en": "KPop Demon Hunters won an Academy Award in 2026. According to the 한류 (Korean Wave) article, what broader phenomenon does such international recognition exemplify, and name one other example of it from the corpus.",
+    "expected_behavior": "answer_from_corpus",
+    "expected_answer": "It exemplifies the Korean Wave (한류) — the global spread of Korean culture; another corpus example: Parasite, Squid Game, or BTS.",
+    "verify": true
+  }
+]
