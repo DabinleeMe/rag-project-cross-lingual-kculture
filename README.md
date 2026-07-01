@@ -1,36 +1,32 @@
 # Cross-Lingual K-Culture RAG
 
-A small, fully local Retrieval-Augmented Generation (RAG) project that answers **English and Korean** questions from **Korean Wikipedia** source documents about K-culture, and measures how well it does it.
+A small, fully local Retrieval-Augmented Generation (RAG) project that answers **English and Korean** questions from **Korean Wikipedia** documents about K-culture, and measures **where and why it breaks**.
 
-The interesting question behind it: how does a language model connect two languages that look completely different in shape, like Korean and English? And does RAG actually add value when the model is tested on facts it cannot already know?
+The driving questions: how does a language model connect two very different languages (Korean and English)? Does RAG add real value on facts the model cannot already know? And what actually happens when you remove the "answer only from the context" safety rule?
 
-> **One-line takeaway:** the system finds the right document very well and never makes things up, but it answers the actual question only about a third of the time. The bottleneck is **chunking**, not search.
+> **One-line takeaway:** the system finds the right document very well (≈89% retrieval) and, with a grounding rule on, almost never makes things up. But it answers the actual question only about a third of the time, because fixed-size chunking cuts the key fact out of the retrieved passage. When the grounding rule is removed, accuracy jumps — and that is exactly where the strong and the weak model split apart.
 
 ---
 
 ## Motivation
 
-This started as a writing helper for German learners (A2–B1). The problem was that the models already know German grammar too well, so I could not tell whether the help came from my documents or from the model itself. The signal was too weak to measure.
-
-So I pivoted to a harder cross-lingual case. A recent paper notes that Korean is a **low-resource language for RAG** and that good evaluation frameworks are still missing (Kim et al., 2025). The same work reports **EXAONE 3.5** as the strongest open Korean model, which motivated a **strong vs. weak generator** comparison (EXAONE 3.5 vs. Llama 3). For a light but fun corpus, I chose K-culture, pulled entirely from Wikipedia for copyright safety.
+This started as a writing helper for German learners (A2–B1), but the models already knew German grammar too well to measure any RAG effect. So I pivoted to a harder cross-lingual case. A recent paper notes that Korean is a **low-resource language for RAG** with few good evaluation frameworks (Kim et al., 2025), and reports **EXAONE 3.5** as the strongest open Korean model — which motivated a **strong vs. weak generator** comparison (EXAONE 3.5 vs. Llama 3). For a light corpus, I used K-culture, taken entirely from Wikipedia for copyright safety.
 
 ---
 
 ## Corpus
 
-Seven Korean Wikipedia articles, saved as PDFs (130 pages total).
+Seven Korean Wikipedia articles, saved as PDFs (130 pages total), in `Data/`.
 
 | File | Article | Source |
 |---|---|---|
-| `01_kpop_demon_hunters` | 케이팝 데몬 헌터스 (KPop Demon Hunters) | ko.wikipedia.org/wiki/케이팝_데몬_헌터스 |
+| `01_kpop_demon_hunters` | 케이팝 데몬 헌터스 | ko.wikipedia.org/wiki/케이팝_데몬_헌터스 |
 | `02_bts` | 방탄소년단 (BTS) | ko.wikipedia.org/wiki/방탄소년단 |
 | `03_blackpink` | 블랙핑크 (BLACKPINK) | ko.wikipedia.org/wiki/블랙핑크 |
-| `04_squid_game` | 오징어 게임 (Squid Game) | ko.wikipedia.org/wiki/오징어_게임 |
-| `05_parasite` | 기생충 (Parasite, film) | ko.wikipedia.org/wiki/기생충_(영화) |
-| `06_Hallyu` | 한류 (Hallyu) | ko.wikipedia.org/wiki/한류 |
-| `07_K-pop` | 케이팝 (K-pop) | ko.wikipedia.org/wiki/케이팝 |
-
-> Corpus PDFs live in `Data/` and are included in the repo. They are sourced from Korean Wikipedia (CC BY-SA) — see Attribution below.
+| `04_squid_game` | 오징어 게임 | ko.wikipedia.org/wiki/오징어_게임 |
+| `05_parasite` | 기생충 (영화) | ko.wikipedia.org/wiki/기생충_(영화) |
+| `06_Hallyu` | 한류 | ko.wikipedia.org/wiki/한류 |
+| `07_K-pop` | 케이팝 | ko.wikipedia.org/wiki/케이팝 |
 
 ---
 
@@ -39,28 +35,29 @@ Seven Korean Wikipedia articles, saved as PDFs (130 pages total).
 Everything runs locally through Ollama. No cloud API.
 
 ```
-PDFs → chunk → embed (Nomic) → FAISS → retrieve top-k → prompt → answer
+PDFs → chunk → embed (nomic-embed-text) → FAISS → retrieve top-k → prompt → answer
 ```
 
-- **Loader:** `PyPDFLoader` (7 Korean PDFs → 130 pages)
-- **Chunking:** `RecursiveCharacterTextSplitter` — baseline 500 / overlap 50; large 1200 / overlap 200
-- **Embedding:** `nomic-embed-text` via `OllamaEmbeddings` (switched from HuggingFace embeddings to stay Torch-free and avoid a Torch error)
-- **Vector store:** FAISS
-- **Search:** cosine similarity / MMR / HyDE; `k = 3` in the evaluation
+- **Loader:** `PyPDFLoader` (7 PDFs → 130 pages)
+- **Chunking:** `RecursiveCharacterTextSplitter` — fixed 500 / overlap 50; large 1200 / overlap 200
+- **Embedding:** `nomic-embed-text` via `OllamaEmbeddings` (switched from HuggingFace to stay Torch-free)
+- **Vector store:** FAISS · **Search:** cosine / MMR / HyDE · **k = 3**
 - **Generator:** EXAONE 3.5 (strong) vs. Llama 3 (weak)
-- **Prompt:** answer only from context, otherwise say the document does not state it, never invent facts
+- **Prompt:** a **grounding** rule (answer only from context, else say it is not stated, never invent) — and a **loose** rule (may also use own knowledge) for the last two settings
 
-### The five settings (one dial changed at a time)
+### The 7 settings (one dial changed at a time)
 
-| Setting | Chunking | Search | Model |
-|---|---|---|---|
-| `baseline` | fixed (500) | cosine | EXAONE 3.5 |
-| `exp1_largechunk` | large (1200) | cosine | EXAONE 3.5 |
-| `exp2_mmr` | fixed (500) | MMR | EXAONE 3.5 |
-| `exp3_hyde` | fixed (500) | HyDE | EXAONE 3.5 |
-| `exp4_weakmodel` | fixed (500) | cosine | Llama 3 |
+| Setting | Chunking | Search | Model | Grounding |
+|---|---|---|---|---|
+| `baseline` | fixed (500) | cosine | EXAONE 3.5 | strict |
+| `exp1_largechunk` | large (1200) | cosine | EXAONE 3.5 | strict |
+| `exp2_mmr` | fixed (500) | MMR | EXAONE 3.5 | strict |
+| `exp3_hyde` | fixed (500) | HyDE | EXAONE 3.5 | strict |
+| `exp4_weakmodel` | fixed (500) | cosine | Llama 3 | strict |
+| `exp5_nogrounding` | fixed (500) | cosine | EXAONE 3.5 | **loose** |
+| `exp6_nogrounding_weak` | fixed (500) | cosine | Llama 3 | **loose** |
 
-Language is handled **per question**: a bilingual question runs once in English and once in Korean, which gives the cross-lingual comparison.
+Language is handled **per question**: a bilingual question runs once in English and once in Korean.
 
 ---
 
@@ -68,13 +65,16 @@ Language is handled **per question**: a bilingual question runs once in English 
 
 ```
 .
-├── Data/                          # 7 Korean Wikipedia PDFs (not committed)
-├── questions_kculture_v2.json     # 19 evaluation questions, 4 tiers
-├── RAG_Ollama_interactive.py      # type a question, see chunks + answers (RAG vs no-RAG)
-├── RAG_Ollama_evaluation.py       # runs the full 5×19 grid, saves the CSV
-├── RAG_Kculture_result.csv        # 95 runs (raw output)
-├── RAG_Kculture_scored.xlsx       # manual scores added
-└── Engineering_Report_Kculture_RAG.html  # full write-up
+├── Data/                                  # 7 Korean Wikipedia PDFs
+├── questions_kculture_v2.json             # 19 evaluation questions, 4 tiers
+├── RAG_Ollama_evaluation.py               # runs the full 7×19 grid → CSV
+├── RAG_Ollama_interactive.py              # live check (RAG vs no-RAG)
+├── RAG_Ollama_interactive_v2.py           # live check with switchable search (cosine/MMR/HyDE)
+├── RAG_Kculture_result_7config.csv        # 133 raw runs
+├── RAG_Kculture_scored_7config_FINAL.xlsx # manual scores + Summary sheet
+├── Engineering_Report_Kculture_RAG_EN.docx
+├── Engineering_Report_Kculture_RAG_KO.docx
+└── README.md
 ```
 
 ---
@@ -89,77 +89,65 @@ ollama pull llama3           # weak comparison
 ollama pull nomic-embed-text # embeddings
 ```
 
-Python packages (no Torch needed):
-
 ```bash
 pip install langchain-community langchain-text-splitters langchain-ollama faiss-cpu pypdf
 ```
 
-Place the seven PDFs in `Data/`.
-
----
-
 ## Usage
 
-**Interactive** — type a question, watch the retrieved chunks and both answers (with and without RAG):
-
 ```bash
-python RAG_Ollama_interactive.py
+python RAG_Ollama_evaluation.py     # runs every setting once, writes the result CSV
+python RAG_Ollama_interactive_v2.py # type a question; set SEARCH = cosine/mmr/hyde
 ```
 
-**Evaluation** — runs every setting in one go and writes `RAG_Kculture_result.csv`. The model is part of each setting, so the script swaps models automatically (run it once):
-
-```bash
-python RAG_Ollama_evaluation.py
-```
-
-After the run, fill the manual columns in the CSV: `answer_correct`, `abstained`, `hallucinated`, `faithful`.
+After the run, fill the manual columns (`answer_correct`, `abstained`, `hallucinated`, `faithful`) in the CSV.
 
 ---
 
 ## Evaluation design
 
-The questions are built to **create score gaps between settings**, not to be easy.
+Questions are built to **create score gaps between settings**, not to be easy.
 
 | Tier | Focus | Idea |
 |---|---|---|
-| 1 — Time / RAG gap (T1–T4) | facts after the 2024 cutoff | only RAG can answer (e.g. 2026 awards, album dates) |
-| 2 — Cross-lingual (X1–X3) | EN question, KO text, no shared words | Korean Wave ↔ 한류, Palme d'Or ↔ 황금종려상, barrier ↔ 혼문 |
-| 3 — Grounding (G1–G4) | unanswerable / false premise | the right move is to refuse, not invent |
-| 4 — Multi-hop (M1–M3) | two or more documents at once | small k or low variety fails |
+| 1 — Time / RAG gap | facts after the 2024 cutoff | only RAG can answer (2026 awards, album dates) |
+| 2 — Cross-lingual | EN question, KO text, no shared words | Korean Wave ↔ 한류, Palme d'Or ↔ 황금종려상, barrier ↔ 혼문 |
+| 3 — Grounding | unanswerable / false premise | the right move is to refuse, not invent |
+| 4 — Multi-hop | two or more documents at once | small k or low variety fails |
 
 ---
 
-## Results
+## Results (final, manually scored)
 
-| Setting | Model | Retrieval hit | Answer correct | Abstain | Hallucinated | Faithful |
+| Setting | Model | Grounding | Retrieval | Answer correct | Hallucinated | Faithful |
 |---|---|:--:|:--:|:--:|:--:|:--:|
-| baseline | EXAONE 3.5 | 89.5% | 30.8% | 84.6% | 0.0% | 100% |
-| exp1_largechunk | EXAONE 3.5 | 84.2% | 33.3% | 84.6% | 0.0% | 100% |
-| exp2_mmr | EXAONE 3.5 | 89.5% | 35.7% | 80.0% | 0.0% | 100% |
-| exp3_hyde | EXAONE 3.5 | 78.9% | 35.7% | 80.0% | 0.0% | 100% |
-| exp4_weakmodel | Llama 3 | 89.5% | 35.7% | 80.0% | 0.0% | 100% |
+| baseline | EXAONE 3.5 | strict | 89.5% | 26% | 0 | 74% |
+| exp1_largechunk | EXAONE 3.5 | strict | 84.2% | 26% | 0 | 79% |
+| exp2_mmr | EXAONE 3.5 | strict | 89.5% | 32% | 1 | 79% |
+| exp3_hyde | EXAONE 3.5 | strict | 89.5% | 37% | 1 | 84% |
+| exp4_weakmodel | Llama 3 | strict | 89.5% | 21% | 0 | 79% |
+| **exp5_nogrounding** | EXAONE 3.5 | **loose** | 89.5% | **58%** | 1 | 84% |
+| **exp6_nogrounding_weak** | Llama 3 | **loose** | 89.5% | 32% | **4** | **58%** |
 
-By language, retrieval hit was **100% for English** questions and **71.1% for Korean** questions.
+By language, retrieval was **100% for English** questions and **71.1% for Korean** — every retrieval miss in the whole study was a Korean query.
 
 ## Key findings
 
-1. **No hallucination (0%), fully faithful (100%)** across all 95 runs, even with the weak model. The grounding prompt works.
-2. **The RAG gap:** ~89.5% of documents found, but only ~31% answered, with 80%+ abstentions. Fixed-size chunking splits the key fact out of the retrieved piece, so the model honestly refuses.
-3. **English ≠ Korean:** the embedding matches English questions to Korean text very well; Korean-to-Korean misses more often due to proper nouns and word endings.
-4. **HyDE and large chunks backfired:** HyDE (English guess over a Korean DB) dropped retrieval to 78.9%; larger chunks added noise that diluted similarity.
+1. **The RAG gap.** ~89% of documents found, but only ~21–37% answered under grounding, with high abstention. Fixed-size chunking splits the key fact out of the retrieved passage, so the model honestly refuses ("the document does not state it").
+2. **English ≠ Korean.** The embedding matches English questions to Korean text very well; Korean-to-Korean misses more (proper nouns, word endings).
+3. **HyDE and large chunks backfired.** HyDE (an English guess over a Korean DB) and larger, noisier chunks both hurt retrieval.
+4. **Grounding is a safety belt — and it hid the models.** With the rule on, EXAONE and Llama 3 looked identical (near-zero hallucination, similar accuracy). Removing it revealed the real gap: EXAONE loose reached **58% correct with 1 hallucination and 84% faithful**, while Llama 3 loose stalled at **32%, jumped to 4 hallucinations, and dropped to 58% faithful** (it even invented a fake 2005 drama). The strong model's real advantage is that it **stays honest without a strict prompt**.
 
 ## Next steps
 
-- **Parent-document retrieval** so the full section reaches the model instead of a cut fragment.
-- **Hybrid search (BM25 + dense)** so exact Korean proper nouns are matched directly.
+- **Parent-document retrieval** + higher `k`, so the full section (not a cut fragment) reaches the model.
+- **Hybrid search (BM25 + dense)** to match exact Korean proper nouns.
 - **Span-level scoring**, not just document-level, to expose the real failure point.
-
----
+- **Keep grounding on in any product**, especially with a weaker model.
 
 ## Limitations
 
-Single run, 19 questions per setting (differences of one or two questions are within noise). Retrieval is scored at the document level. A few gold answers still need a final check against the source text.
+Single run, 19 questions per setting (differences of one or two are within noise); retrieval scored at document level; four answer columns scored by hand; `k` held constant at 3. See the engineering report for details.
 
 ## Attribution
 
