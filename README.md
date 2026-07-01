@@ -69,11 +69,8 @@ Language is handled **per question**: a bilingual question runs once in English 
 ├── questions_kculture_v2.json             # 19 evaluation questions, 4 tiers
 ├── RAG_Ollama_evaluation.py               # runs the full 7×19 grid → CSV
 ├── RAG_Ollama_interactive.py              # live check (RAG vs no-RAG)
-├── RAG_Ollama_interactive_v2.py           # live check with switchable search (cosine/MMR/HyDE)
 ├── RAG_Kculture_result_7config.csv        # 133 raw runs
 ├── RAG_Kculture_scored_7config_FINAL.xlsx # manual scores + Summary sheet
-├── Engineering_Report_Kculture_RAG_EN.docx
-├── Engineering_Report_Kculture_RAG_KO.docx
 └── README.md
 ```
 
