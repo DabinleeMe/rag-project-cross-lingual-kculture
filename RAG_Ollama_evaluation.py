@@ -1,7 +1,7 @@
 """
 RAG_Ollama_evaluation.py  (torch-free, Korean K-culture, v2 qualitative eval)
 ==========================================================================
-Runs the whole experiment matrix in ONE go and saves RAG_Kculture_result.csv.
+Runs the whole experiment matrix in ONE go and saves RAG_Kculture_result_7config.csv.
 You do NOT run it twice — the model is part of 
 each config, so the script swaps models automatically.
 
@@ -18,7 +18,7 @@ Language is handled PER QUESTION (not per config): a question tagged
 ["en","ko"] is run in BOTH languages -> the EN vs KO rows give the
 cross-lingual penalty.
 
-Output: RAG_Kculture_result_final.csv
+Output: RAG_Kculture_result_7config.csv
 Manual columns to fill after the run: answer_correct, abstained, hallucinated, faithful
 
 Folder layout (same folder as this file):
@@ -45,7 +45,7 @@ from langchain_ollama import OllamaLLM, OllamaEmbeddings
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "Data"
 QUESTIONS = ROOT / "questions_kculture_v2.json"
-OUT_CSV = ROOT / "RAG_Kculture_result_final.csv"
+OUT_CSV = ROOT / "RAG_Kculture_result_7config.csv"
 
 # ---- models ----
 STRONG_MODEL = "exaone3.5"   
